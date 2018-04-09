@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <title>Koch Snowflake</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        div {
+            padding: 60px;
+        }
+
+        svg {
+            display: block;
+            margin: auto;
+
+            fill: none;
+            stroke: #008000;
+            stroke-width: 1px;
+
+            filter: drop-shadow(0 0 2px #000);
+            -webkit-filter: drop-shadow(0 0 2px #000);
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <svg id="graph" height="800" width="800"></svg>
+    </div>
+
+    <script>
+        function rotate(cx, cy, x, y, angle) {
+            var radians = (Math.PI / 180) * angle,
+                cos = Math.cos(radians),
+                sin = Math.sin(radians),
+                nx = (cos * (x - cx)) + (sin * (y - cy)) + cx,
+                ny = (cos * (y - cy)) - (sin * (x - cx)) + cy;
+            return [nx, ny];
+        }
+
+        function newPoints(points, index) {
+            var start = points[index];
+            var end = points[(index + 1) % points.length];
+
+            var first = [(2 * start.x + end.x) / 3, (2 * start.y + end.y) / 3];
+            var third = [(start.x + 2 * end.x) / 3, (start.y + 2 * end.y) / 3];
+
+            var second = rotate(first[0], first[1], third[0], third[1], 60);
+
+            points.splice(index + 1, 0, {'x' : first[0], 'y' : first[1]});
+            points.splice(index + 2, 0, {'x' : second[0], 'y' : second[1]});
+            points.splice(index + 3, 0, {'x' : third[0], 'y' : third[1]});
+        }
+
+        function iterate(points, level) {
+            var numOfIterations = 3 * Math.pow(4, level - 1);
+
+            for (var i = 0; i < numOfIterations; i++) {
+                newPoints(points, i * 4);
+            }
+        }
+
+        function generate(level, width, padding) {
+            var points = [];
+
+            width -= padding * 2;
+            var size = Math.sqrt(3) * width / 2;
+            var delta = width * (1.0 - Math.sqrt(3) / 2.0) / 2.0;
+
+            points.push({'x' : width / 2 + padding, 'y' : padding});
+            points.push({'x' : (width + size) / 2 + padding, 'y' : Math.sqrt(3) * size / 2.0 + padding});
+            points.push({'x' : (width - size) / 2 + padding, 'y' : Math.sqrt(3) * size / 2.0 + padding});
+
+            generateOver(1, level, points);
+
+            return points;
+        }
+
+        function generateOver(currentLevel, targetLevel, points) {
+            for (var i = currentLevel; i <= targetLevel - 1; i++) {
+                iterate(points, i);
+            }
+        }
+
+        function draw(graph, points) {
+            if (graph.lastChild) graph.removeChild(graph.lastChild);
+
+            var shape = "<polygon points=\"";
+            for (var i = 0; i < points.length; i++) {
+                shape += points[i].x + "," + points[i].y;
+                if (i < points.length - 1) shape += " ";
+            }
+            shape += "\" />";
+            graph.innerHTML += shape;
+        }
+
+        var graph = document.getElementById("graph");
+        var level = 1;
+        var points = generate(level, graph.getBoundingClientRect().width, 5);
+        draw(graph, points);
+
+        var intervalID = setInterval(function () {
+            if (level < 8) {
+                generateOver(level, level + 1, points);
+                level++;
+                draw(graph, points);
+            } else {
+                console.log("Done!");
+                level = 1;
+                points = generate(level, graph.getBoundingClientRect().width, 5);
+                draw(graph, points);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
